@@ -11,14 +11,17 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
-db.getConnection((err, connection) => {
-  if (err) {
-    console.log("Database connection failed:", err.message);
-    return;
-  }
+const promiseDb = db.promise();
 
-  console.log("MySQL Database Connected Successfully!");
-  connection.release();
-});
+// Test database connection
+promiseDb
+  .getConnection()
+  .then((connection) => {
+    console.log("MySQL Connected Successfully");
+    connection.release();
+  })
+  .catch((error) => {
+    console.error("Database Connection Failed:", error.message);
+  });
 
-module.exports = db;
+module.exports = promiseDb;

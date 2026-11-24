@@ -1,18 +1,23 @@
 const express = require("express");
 const router = express.Router();
 
-const {
-  getAllEmployees,
-  getEmployeeById,
-  createEmployee,
-  updateEmployee,
-  deleteEmployee,
-} = require("../controllers/employeeController");
+const controller = require("../controllers/employeeController");
+const validateEmployee = require("../middleware/validateEmployee");
+const validateId = require("../middleware/validateId");
 
-router.get("/", getAllEmployees);
-router.get("/:id", getEmployeeById);
-router.post("/", createEmployee);
-router.put("/:id", updateEmployee);
-router.delete("/:id", deleteEmployee);
+// GET all employees
+router.get("/", controller.getAllEmployees);
+
+// GET single employee
+router.get("/:id", validateId, controller.getEmployeeById);
+
+// CREATE employee
+router.post("/", validateEmployee, controller.createEmployee);
+
+// UPDATE employee
+router.put("/:id", validateId, validateEmployee, controller.updateEmployee);
+
+// DELETE employee
+router.delete("/:id", validateId, controller.deleteEmployee);
 
 module.exports = router;

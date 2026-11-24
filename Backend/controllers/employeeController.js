@@ -1,25 +1,64 @@
 const Employee = require("../models/employeeModel");
 
 // GET ALL EMPLOYEES
-const getAllEmployees = async (req, res) => {
+const getAllEmployees = async (req, res, next) => {
   try {
-    const employees = await Employee.getAllEmployees();
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+    const search = String(req.query.search ?? "").trim();
+    const department = String(req.query.department ?? "").trim();
+    const status = String(req.query.status ?? "").trim();
+
+    if (
+      !Number.isSafeInteger(page) ||
+      page < 1 ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 100
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Page must be positive and limit must be between 1 and 100",
+      });
+    }
+
+    if (
+      search.length > 100 ||
+      department.length > 100 ||
+      !["", "Active", "Inactive"].includes(status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid search or filter values",
+      });
+    }
+
+    const result = await Employee.getAllEmployees({
+      page,
+      limit,
+      search,
+      department,
+      status,
+    });
 
     res.status(200).json({
       success: true,
-      count: employees.length,
-      data: employees,
+      message: "Employees fetched successfully",
+      data: result.employees,
+      pagination: {
+        totalRecords: result.total,
+        currentPage: page,
+        totalPages: Math.ceil(result.total / limit),
+        limit,
+      },
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
 // GET SINGLE EMPLOYEE
-const getEmployeeById = async (req, res) => {
+const getEmployeeById = async (req, res, next) => {
   try {
     const employee = await Employee.getEmployeeById(req.params.id);
 
@@ -35,86 +74,28 @@ const getEmployeeById = async (req, res) => {
       data: employee,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
 // CREATE EMPLOYEE
-const createEmployee = async (req, res) => {
+const createEmployee = async (req, res, next) => {
   try {
-    const {
-      name,
-      email,
-      phone,
-      department,
-      designation,
-      salary,
-      joining_date,
-      status,
-    } = req.body;
-
-    if (!name || !email) {
-      return res.status(400).json({
-        success: false,
-        message: "Name and email are required",
-      });
-    }
-
-    const id = await Employee.createEmployee({
-      name,
-      email,
-      phone,
-      department,
-      designation,
-      salary,
-      joining_date,
-      status,
-    });
+    const id = await Employee.createEmployee(req.body);
 
     res.status(201).json({
       success: true,
       message: "Employee created successfully",
-      id,
+      data: { id },
     });
   } catch (error) {
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
 // UPDATE EMPLOYEE
-const updateEmployee = async (req, res) => {
+const updateEmployee = async (req, res, next) => {
   try {
-    const {
-      name,
-      email,
-      phone,
-      department,
-      designation,
-      salary,
-      joining_date,
-      status,
-    } = req.body;
-
-    if (!name || !email) {
-      return res.status(400).json({
-        success: false,
-        message: "Name and email are required",
-      });
-    }
-
     const employee = await Employee.getEmployeeById(req.params.id);
 
     if (!employee) {
@@ -124,38 +105,19 @@ const updateEmployee = async (req, res) => {
       });
     }
 
-    await Employee.updateEmployee(req.params.id, {
-      name,
-      email,
-      phone,
-      department,
-      designation,
-      salary,
-      joining_date,
-      status,
-    });
+    await Employee.updateEmployee(req.params.id, req.body);
 
     res.status(200).json({
       success: true,
       message: "Employee updated successfully",
     });
   } catch (error) {
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
 // DELETE EMPLOYEE
-const deleteEmployee = async (req, res) => {
+const deleteEmployee = async (req, res, next) => {
   try {
     const result = await Employee.deleteEmployee(req.params.id);
 
@@ -171,10 +133,7 @@ const deleteEmployee = async (req, res) => {
       message: "Employee deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
