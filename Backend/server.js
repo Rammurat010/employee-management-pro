@@ -2,10 +2,15 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const authRoutes = require("./routes/authRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
+
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is missing in .env");
+}
 
 app.use(cors());
 app.use(express.json());
@@ -18,10 +23,13 @@ app.get("/", (req, res) => {
   });
 });
 
-// Employee Routes
+// Authentication APIs
+app.use("/api/auth", authRoutes);
+
+// Protected Employee APIs
 app.use("/api/employees", employeeRoutes);
 
-// 404 Route
+// 404 API
 app.use((req, res, next) => {
   const error = new Error("API route not found");
   error.statusCode = 404;

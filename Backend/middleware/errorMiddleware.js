@@ -5,7 +5,6 @@ const errorMiddleware = (err, req, res, next) => {
     return next(err);
   }
 
-  // Duplicate email
   if (err.code === "ER_DUP_ENTRY") {
     return res.status(409).json({
       success: false,
@@ -13,7 +12,6 @@ const errorMiddleware = (err, req, res, next) => {
     });
   }
 
-  // Database errors and other server errors
   res.status(err.statusCode || 500).json({
     success: false,
     message: err.statusCode ? err.message : "Internal Server Error",
